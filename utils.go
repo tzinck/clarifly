@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -26,6 +27,13 @@ func failGracefully(err error, msg string) {
 	}
 }
 
+func failOnError(err error, msg string) {
+	if err != nil {
+		fmt.Printf("%s: %s", msg, err)
+		panic(err)
+	}
+}
+
 func randString(n int) string {
 	var src = rand.NewSource(time.Now().UnixNano())
 	b := make([]byte, n)
@@ -42,4 +50,12 @@ func randString(n int) string {
 	}
 
 	return string(b)
+}
+
+func checkHeroku() bool {
+	if os.Getenv("IS_HEROKU") != "" {
+		fmt.Printf("this is running on heroku")
+		return true
+	}
+	return false
 }
