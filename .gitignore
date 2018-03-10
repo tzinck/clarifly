@@ -1,14 +1,4 @@
 .DS_Store
-node_modules
-ignore
-src/css/foundation/_sprite.scss
-dst/css/**/*
-dst/js/**/*
-dst/**/*.json
-dst/**/*.html
-dst/img/common/sprite.png
-build/**/*
-.sass-cache
 
 # Logs
 logs
