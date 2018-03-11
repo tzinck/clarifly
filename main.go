@@ -70,9 +70,9 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := struct {
-		RoomString string
-	}{""}
+	// message := struct {
+	// 	RoomString string
+	// }{""}
 	// frontend handshake to get user and hook them into the userMap for sockets
 	messageType, p, err := conn.ReadMessage()
 	if err != nil {
@@ -82,7 +82,13 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("here's your message, bitch: " + string(p))
-	roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
+	// roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
+	roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
+
+	for code, ws_list := range roomConnectionMap {
+        // send questions DB stuff for code
+        fmt.Println("code: " + code + ", len: " + string(len(ws_list)));
+    }
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
