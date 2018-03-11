@@ -12,7 +12,7 @@
                 </div>
                
               <p class="intro-text">Make your voice heard in class - without raising your hand</p>
-              <a href="" class="btn btn-default btn-lg">Create a Room</a>
+              <v-btn @click.native="createRoom" class="btn btn-default btn-lg">Create a Room</v-btn>
                 <br>
             <a href="" class="btn btn-join btn-lg">Join a Room</a>
             </div>
@@ -48,7 +48,22 @@ export default {
     return {
       msg: 'Welcome to Your Vue.js App'
     }
-  }
+  },
+  methods: {
+      createRoom: function() {
+        this.ajaxRequest = true;
+        this.$http.post('http://28ffb55a.ngrok.io/createRoom', {},
+         function (data, status, request) {
+                this.postResults = data;
+                this.ajaxRequest = false;
+            });
+      }
+    }
 }
 </script>
+<style scoped>
+body{
+  background-color:#90D0E5;
+}
+</style>
 
