@@ -7,8 +7,11 @@ Vue.use(Router)
 
 function asdf(to, from, next)
 {
-  if(to.params.room != store.state.room)
+  console.log(to.params.room);
+  console.log(store.state.room);
+  if(to.params.room != store.state.room.Code)
   {
+    console.log(store.state.room.Code);
     console.log(to.params.room);
     console.log("fdsfad");
     next('/');

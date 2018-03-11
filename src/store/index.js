@@ -18,7 +18,23 @@ export default new Vuex.Store({
         },
 
         set_question(state, question){
-            state.room.Questions.append(question);
+            console.log(state.room.Questions);
+            if(state.room.Questions != undefined ){
+            state.room.Questions = state.room.Questions.filter(function(item) { 
+                return item.QID !== question.QID;
+            })
+            state.room.Questions.push(question);
+            
+        }else{
+            if(state.room.Code == undefined)
+            {
+                state.room = {'Code': state.room, 'Questions': [question]};
+            }else{
+                state.room.Questions = [question];
+            }
+        }
+            
+            
         },
 
         set_secret(state, secret){

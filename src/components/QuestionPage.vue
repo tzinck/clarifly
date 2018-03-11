@@ -17,7 +17,7 @@
               <div class="upvote"> <img v-on:click="upvote(q.QID)" class="ruppee" src="./../assets/rup.png"><span class="count">{{q.Votes}} </span></div>
               <div class="row">
                 <div class="question-box speech-bubble">
-                  <p class="question" v-bind:style="{ fontSize: getFontSize(10) + 'px' }">
+                  <p class="question" v-bind:style="{ fontSize: getFontSize(q.Votes) + 'px' }">
                     
                     {{q.Text}}
                    
@@ -36,7 +36,7 @@
             <div class="upvote"><img v-on:click="upvote(qt.QID)" class="ruppee" src="./../assets/rup.png"> <span class="count">{{qt.Votes}} </span></div>
       
           <div class="row">
-            <div class="question-box answered speech-bubble" v-bind:style="{ borderWidth: getBorderWidth(qt.Votes) + 'px' }">
+            <div class="question-box answered speech-bubble">
               <p class="question" v-bind:style="{ fontSize: getFontSize(qt.Votes) + 'px' }">
               {{qt.Text}}
               </p>
@@ -76,49 +76,55 @@ export default {
         console.log(this.$store.state.connected);
         if(!this.$store.state.connected)
         {
+          console.log("no socket");
           this.$router.push({ name: 'LandingPage' });
         }
 
         var self = this;
+        console.log(this.$store.state.ws);
+        if(this.$store.state.ws!=""){
         this.$store.state.ws.addEventListener('message', function(e) {
             console.log(e);
             console.log("acquired a meme");
             //var msg = JSON.parse(e.data);
         });
+        }
       },
 
     computed: {
           sorted_questions() {
             if(this.$store.state.room.Questions != undefined){
-              return this.$store.state.room.Questions.sort((a, b) => { return b.Votes - a.Votes;});
+              return this.$store.state.room.Questions.sort((a, b) => { return a.Votes - b.Votes;}).reverse();
             }else{
               return null;
             }
-      },
+          }
+
+            
     },
 
     methods: {
 
+      counted_questions() {
+            if(this.$store.state.room.Questions != undefined){
+              return this.$store.state.room.Questions.reduce((a, b) => { return a.Votes + b.Votes;})
+            }else{
+              return 0;
+            }
+          },
       getFontSize(count)
       {
-        var totalUpvotes = this.$store.state.room.VotesSum;
+        var totalUpvotes = this.counted_questions();
         var minFont = 12;
 
         return minFont + (count/totalUpvotes)*30;
       },
       
-      getBorderWidth(count)
-      {
-        var totalUpvotes = this.$store.state.room.VotesSum;
-        var minFont = 1;
-
-        return minFont + (count/totalUpvotes)*5;
-      },
 
       sendQuestion() {
         // emit message to start a new game
 
-        this.$http.post('/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room}).then(response => {
+        this.$http.post('http://localhost:8080/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room.Code}).then(response => {
 
 
         }, response => {
@@ -128,7 +134,7 @@ export default {
 
       upvote(id) {
           // emit message to start a new game
-          this.$http.post('/vote', {"QuestionID": parseInt(id), "RoomCode": this.$store.state.room.Code}).then(response => {
+          this.$http.post('http://localhost:8080/vote', {"QuestionID": parseInt(id), "RoomCode": this.$store.state.room.Code}).then(response => {
           }, response => {
             console.log(response);
           });
@@ -142,6 +148,14 @@ export default {
 
 .list-move {
   transition: transform 1s;
+}
+
+.list-enter-active, .list-leave-active {
+  transition: all 0.0s;
+}
+.list-enter, .list-leave-to /* .list-leave-active below version 2.1.8 */ {
+  opacity: 0;
+  transform: translateY(30px);
 }
 
 .ruppee{

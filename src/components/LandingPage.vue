@@ -12,7 +12,7 @@
                 </div>
                
               <p class="intro-text">Make your voice heard in class - without raising your hand</p>
-              <a v-on:click="createRoom" class="btn btn-default btn-lg">Create a Room</a> {{someData}}
+              <a v-on:click="createRoom" class="btn btn-default btn-lg">Create a Room</a>
                 <br>
             <a v-on:click="joinRoom" class="btn btn-join btn-lg">Join a Room</a>
             <br>
@@ -79,15 +79,18 @@ export default {
           console.log("mememe");
         // GET /someUrl
 
-        this.$http.post('/createRoom', {}).then(response => {
+        this.$http.post('http://localhost:8080/createRoom', {}).then(response => {
 
 
           // get body data
-          this.someData = response.body;
+          //this.someData = response.body;
+          this.someData = response.body.split(',')
           this.$store.commit('set_secret',this.someData[0]);
           this.$store.commit('set_room',this.someData[1]);
-          
-          this.$router.push({ name: 'Join', params: { room: this.$store.state.room } });
+          this.room = this.someData[1];
+          this.$store.commit('set_connected',true);
+          //this.$router.push({ name: 'Join', params: { room: this.$store.state.room } });
+          this.joinRoom();
 
         }, response => {
           console.log(response);
@@ -117,7 +120,7 @@ export default {
 
         // Open websocket
 
-        this.ws = new WebSocket("/joinRoom");
+        this.ws = new WebSocket("ws://localhost:8080/joinRoom");
 
 
         // On message: if room doesn't exist, close socket. 
@@ -130,15 +133,20 @@ export default {
             self.$store.commit('set_connected',true);
 
             var obj = JSON.parse(e.data);
-            if(obj.Questions.length == 1)
+            console.log(obj);
+            if(obj.Code != undefined)
             {
-              self.$store.commit('set_question', obj.Questions[0]);
+              self.$store.commit('set_room', obj);
+              console.log("meme");
+              
             }
             else{
-              self.$store.commit('set_room', obj);
+              console.log("meme2");
+              self.$store.commit('set_question', obj);
+              
             }
             self.$store.commit('set_ws', self.ws);
-            self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
+            self.$router.push({ name: 'Join', params: { room: self.$store.state.room.Code } });
           }
         };
           // On open: send our room code
