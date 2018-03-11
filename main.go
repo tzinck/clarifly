@@ -93,6 +93,8 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+		fmt.Println("11111")
+		return
 	}
 
 	queryString := "UPDATE questions SET votes = votes + 1 WHERE q_id = $1"
@@ -115,8 +117,35 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(socket)
 		// grab all the questions from the database for this room and send them back over the socket
 	}
+}
 
-	w.WriteHeader(http.StatusOK)
+func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("asdkjsflkjsdlkfsd hahahahahaha\n");
+
+	// get question submitted by client from request
+	message := "hi this is question pls answer"
+
+	// get room code from request
+	room_code := "boob";
+
+	// add new question to DB
+	queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
+	stmt, err := db.Prepare(queryString)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stmt.Exec(room_code, message)
+
+
+	// broadcast new message to all websockets for this room
+	for _, ws := range roomConnectionMap[room_code] {
+		// send questions DB stuff for code
+		fmt.Println(ws);
+		fmt.Println("hi hahahahahaha\n");
+	}
 }
 
 func hideHandler(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +165,36 @@ func loadConfig() Configuration {
 		}
 	}
 	return configuration
+}
+
+func getQuestions(room_code string) {
+	queryString := fmt.Sprintf("SELECT text, votes FROM questions WHERE room_code = %s", room_code)
+	rows, err := db.Query(queryString)
+
+	// CHECK ERR HERE
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+
+	}
+
+	/*
+	rows, err := db.Query("SELECT * FROM userinfo")
+        checkErr(err)
+
+        for rows.Next() {
+            var uid int
+            var username string
+            var department string
+            var created time.Time
+            err = rows.Scan(&uid, &username, &department, &created)
+            checkErr(err)
+            fmt.Println("uid | username | department | created ")
+            fmt.Printf("%3v | %8v | %6v | %6v\n", uid, username, department, created)
+        }
+	*/ 
 }
 
 func initDB() *sql.DB {
@@ -169,6 +228,7 @@ func main() {
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/createRoom", createRoomHandler)
 	http.HandleFunc("/joinRoom", joinRoomHandler)
+	http.HandleFunc("/askQuestion", askQuestionHandler)
 	http.HandleFunc("/vote", voteHandler)
 	http.HandleFunc("/hide", hideHandler)
 	http.ListenAndServe(configuration.Port, nil)
