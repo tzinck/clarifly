@@ -78,7 +78,8 @@ export default {
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        this.$http.post('http://localhost:8080/createRoom', {}).then(response => {
+
+        this.$http.post('localhost/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
