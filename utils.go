@@ -23,13 +23,13 @@ func failWithStatusCode(err error, msg string, w http.ResponseWriter, statusCode
 
 func failGracefully(err error, msg string) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		fmt.Printf("%s: %s\n", msg, err)
 	}
 }
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		fmt.Printf("%s: %s\n", msg, err)
 		panic(err)
 	}
 }

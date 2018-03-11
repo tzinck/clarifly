@@ -63,30 +63,31 @@ func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// upgrade to a websocket
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
-		return
-	}
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
 
-	// message := struct {
-	// 	RoomString string
-	// }{""}
-	// frontend handshake to get user and hook them into the userMap for sockets
-	messageType, p, err := conn.ReadMessage()
-	if err != nil {
-		fmt.Println(messageType)
-		failWithStatusCode(err, "Failed to handshake", w, http.StatusInternalServerError)
-		return
-	}
+    // message := struct {
+    //  RoomString string
+    // }{""}
+    // frontend handshake to get user and hook them into the userMap for sockets
+    messageType, p, err := conn.ReadMessage()
+    if err != nil {
+        failWithStatusCode(err, "Failed to handshake", w, http.StatusInternalServerError)
+        return
+    }
 
-	fmt.Println("here's your message, bitch: " + string(p))
-	// roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
-	roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
+    fmt.Println("room code received: " + string(p))
+    fmt.Println(messageType)
+    roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
 
-	for code, ws_list := range roomConnectionMap {
-        // send questions DB stuff for code
-        fmt.Println("code: " + code + ", len: " + string(len(ws_list)));
+    returnmsg := []byte("we got yo shit")
+    err = conn.WriteMessage(1, returnmsg)
+    if err != nil {
+        fmt.Println("bad lol")
+        return
     }
 }
 
@@ -165,13 +166,17 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
     }
     fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
     // get list of questions for current room
-        // list = geoff's thing (ws)
+    QuestionsList := getRoom(req.RoomCode)
 
     // broadcast updated question list to all clients in room
-    for _, ws := range roomConnectionMap[req.RoomCode] {
+    for _, socket := range roomConnectionMap[req.RoomCode] {
         // send questions DB stuff for code
-        //ws.WriteJSON(list)
-        fmt.Println(ws)
+        err = socket.WriteJSON(QuestionsList)
+        if err != nil {
+	        failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
+	        return
+	    }
+        //fmt.Println(ws)
         fmt.Println("sent the questions to a guy\n");
     }
 }
