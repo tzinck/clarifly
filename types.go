@@ -3,6 +3,8 @@ package main
 
 type QuestionMessage struct {
 	Question string
+    Votes int
+    Q_ID int
 }
 
 type Configuration struct {
