@@ -113,8 +113,8 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 	// unmarhall the question id
 	decoder := json.NewDecoder(r.Body)
 	req := struct {
-		RoomCode   string
 		QuestionID string
+		RoomCode   string
 	}{"", ""}
 
 	err := decoder.Decode(&req)
@@ -209,8 +209,8 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
 func hideHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	req := struct {
-		RoomCode   string
 		QuestionID string
+		RoomCode   string
 		Secret     string
 	}{"", "", ""}
 
