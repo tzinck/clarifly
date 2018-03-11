@@ -77,9 +77,8 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("web socket worked")
 	roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
