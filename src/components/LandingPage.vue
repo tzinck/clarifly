@@ -63,12 +63,14 @@ export default {
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        this.$http.post('http://889a3db6.ngrok.io/createRoom', {}).then(response => {
+        this.$http.post('http://9081f8c8.ngrok.io/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
-          this.set_room(this.someData[1]);
-          this.$router.push({ name: 'Join', params: { room: this.someData[1] } });
+          this.$store.commit('set_secret',this.someData[0]);
+          this.$store.commit('set_room',this.someData[1]);
+          
+          this.$router.push({ name: 'Join', params: { room: this.$store.state.room } });
 
         }, response => {
           console.log(response);
@@ -81,14 +83,43 @@ export default {
         // GET /someUrl
         //this.$http.post('http://889a3db6.ngrok.io/joinRoom', {room_id: this.room}).then(response => {
           var self = this;
-        this.ws = new WebSocket("ws://889a3db6.ngrok.io/joinRoom")
-        this.ws.onopen = function() {
-          self.$store.commit('set_connected',true);
-          self.$store.commit('set_room', self.room)
-          self.$store.commit('set_ws', self.ws)
-          self.$store.state.ws.send(self.room);
+          console.log(this.$store.state.ws.readyState);
+
+        // Check to see if the ws already exists and that it's not closed
+        if (this.$store.state.ws && this.$store.state.ws.readyState == '1') {
+          // Exists, route to it
+          console.log("here");
           self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
+        }else{
+        // Doesn't exist, try to make a new one
+
+        // Reset vars
+        self.$store.commit('set_connected',false);
+        self.$store.commit('set_room', '');
+        self.$store.commit('set_ws', '');
+
+        // Open websocket
+        this.ws = new WebSocket("ws://9081f8c8.ngrok.io/joinRoom");
+
+        // On message: if room doesn't exist, close socket. 
+        this.ws.onmessage = function(e) {
+
+          if(String(e.data.trim()) === ("Room " + self.room + " does not exist.")){
+            self.ws.close();
+          }else{
+            // Room exists, route to QuestionPage
+            self.$store.commit('set_connected',true);
+            self.$store.commit('set_room', JSON.parse(e.data));
+            self.$store.commit('set_ws', self.ws);
+            self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
+          }
+        };
+          // On open: send our room code
+          this.ws.onopen = function() {
+            self.ws.send(self.room);
+          };
         }
+
         
 
           // get body data
