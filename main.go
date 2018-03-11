@@ -60,19 +60,6 @@ func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
-	// unmarhall the room string
-	decoder := json.NewDecoder(r.Body)
-	req := struct {
-		RoomString string
-	}{""}
-
-	err := decoder.Decode(&req)
-
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
-		return
-	}
-
 	// upgrade to a websocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -80,7 +67,9 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := struct{ stringAck string }{""}
+	message := struct {
+		RoomString string
+	}{""}
 	// frontend handshake to get user and hook them into the userMap for sockets
 	err = conn.ReadJSON(&message)
 	if err != nil {
@@ -88,7 +77,7 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roomConnectionMap[req.RoomString] = append(roomConnectionMap[req.RoomString], conn)
+	roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
 
 	w.WriteHeader(http.StatusOK)
 }
