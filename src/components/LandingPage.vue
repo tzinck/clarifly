@@ -78,7 +78,9 @@ export default {
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        this.$http.post('http://9081f8c8.ngrok.io/createRoom', {}).then(response => {
+        var host = location.origin.replace(/^http/, 'ws');
+        console.log(host);
+        this.$http.post('localhost/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
