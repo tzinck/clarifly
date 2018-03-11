@@ -4,7 +4,6 @@ body {
   width: 100%;
   height: 100%;
   color: white;
-  background-color: #F5D17B;
 }
 
 html {
@@ -69,7 +68,6 @@ a:focus, a:hover {
   padding: 200px 0;
   text-align: center;
   color: white;
-  background-color: #F5D17B;
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;

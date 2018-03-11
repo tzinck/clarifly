@@ -11,36 +11,38 @@
       
       <div class="questions">
         <h3> Unanswered: </h3>
-            <div class="upvote"> <a href=""> <img class="ruppee" src="./../assets/rup.png"> </a> <span class="count">{{count}} </span></div>
-            <div class="row">
-              <div class="question-box speech-bubble">
-                <p class="question" v-bind:style="{ fontSize: getFontSize(10) + 'px' }">
-                {{msg}}
-                </p>
-                </div>
+            
+            <transition-group name="list" >
+            <div v-for="q in sorted_questions" v-if="!q.Hidden"  v-bind:key="q"> 
+              <div class="upvote"> <img v-on:click="upvote(q.QID)" class="ruppee" src="./../assets/rup.png"><span class="count">{{q.Votes}} </span></div>
+              <div class="row">
+                <div class="question-box speech-bubble">
+                  <p class="question" v-bind:style="{ fontSize: getFontSize(10) + 'px' }">
+                    
+                    {{q.Text}}
+                   
+                  </p>
+                  </div>
+              </div>
+             </div>
+            </transition-group>
             </div>
-            <div class="upvote"> <a href=""> <img class="ruppee" src="./../assets/rup.png"> </a> <span class="count">{{count}} </span></div>
-            <div class="row">
-              <div class="question-box speech-bubble">
-                <p class="question" v-bind:style="{ fontSize: getFontSize(6) + 'px' }">
-                {{msg}}
-                </p>
-                </div>
-            </div>
-      </div>
 
 
     <div class="questions answer">
       <h3> Answered: </h3>
-            <div class="upvote"><img class="ruppee" src="./../assets/rup.png"> <span class="count">{{count}} </span></div>
+
+      <div v-for="qt in sorted_questions" v-if="qt.Hidden"> 
+            <div class="upvote"><img v-on:click="upvote(qt.QID)" class="ruppee" src="./../assets/rup.png"> <span class="count">{{qt.Votes}} </span></div>
       
           <div class="row">
-            <div class="question-box answered speech-bubble" v-bind:style="{ borderWidth: getBorderWidth(1) + 'px' }">
-              <p class="question" v-bind:style="{ fontSize: getFontSize(1) + 'px' }">
-              {{msg}}
+            <div class="question-box answered speech-bubble" v-bind:style="{ borderWidth: getBorderWidth(qt.Votes) + 'px' }">
+              <p class="question" v-bind:style="{ fontSize: getFontSize(qt.Votes) + 'px' }">
+              {{qt.Text}}
               </p>
               </div>
               
+            </div>
             </div>
           </div>
      </div>
@@ -48,7 +50,7 @@
 <nav class="navbar navbar-expand-lg navbar-light fixed-bottom" id="mainNav">
         <div class="container container-ask">
           <img src="./../assets/fairy.gif">
-          <a class="navbar-brand">Room Code   <br>    {{this.$store.state.room}}</a>
+          <a class="navbar-brand">Room Code:   <br>    {{this.$store.state.room.Code}}</a>
           <input label="njknjk" class="input-box" v-model="message" placeholder="Ask Away">
            <a v-on:click="sendQuestion" class="btn">  Submit
            </a>
@@ -74,30 +76,40 @@ export default {
         console.log(this.$store.state.connected);
         if(!this.$store.state.connected)
         {
-        this.$router.push({ name: 'LandingPage' });
+          this.$router.push({ name: 'LandingPage' });
         }
-
 
         var self = this;
         this.$store.state.ws.addEventListener('message', function(e) {
             console.log(e);
+            console.log("acquired a meme");
             //var msg = JSON.parse(e.data);
         });
       },
+
+    computed: {
+          sorted_questions() {
+            if(this.$store.state.room.Questions != undefined){
+              return this.$store.state.room.Questions.sort((a, b) => { return b.Votes - a.Votes;});
+            }else{
+              return null;
+            }
+      },
+    },
 
     methods: {
 
       getFontSize(count)
       {
-        var totalUpvotes = 20;
+        var totalUpvotes = this.$store.state.room.VotesSum;
         var minFont = 12;
 
-        return minFont + (count/totalUpvotes)*12;
+        return minFont + (count/totalUpvotes)*30;
       },
       
       getBorderWidth(count)
       {
-        var totalUpvotes = 20;
+        var totalUpvotes = this.$store.state.room.VotesSum;
         var minFont = 1;
 
         return minFont + (count/totalUpvotes)*5;
@@ -108,16 +120,29 @@ export default {
 
         this.$http.post('/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room}).then(response => {
 
+
         }, response => {
           console.log(response);
         });
-      }
+      },
+
+      upvote(id) {
+          // emit message to start a new game
+          this.$http.post('/vote', {"QuestionID": parseInt(id), "RoomCode": this.$store.state.room.Code}).then(response => {
+          }, response => {
+            console.log(response);
+          });
+        },
     }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+
+.list-move {
+  transition: transform 1s;
+}
 
 .ruppee{
   width:18px;
