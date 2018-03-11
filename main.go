@@ -38,9 +38,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// generate the room string
 	roomString := randString(4)
+	// generate a secret to share with the creator
+	roomSecret := randString(32)
 
 	// insert the new room
-	queryString := "INSERT INTO rooms(room_code, start_time) VALUES($1, now())"
+	queryString := "INSERT INTO rooms(room_code, secret, start_time) VALUES($1, $2, now())"
 	stmt, err := db.Prepare(queryString)
 
 	if err != nil {
@@ -48,15 +50,12 @@ func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = stmt.Exec(roomString)
+	_, err = stmt.Exec(roomString, roomSecret)
 
 	if err != nil {
 		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
 		return
 	}
-
-	// generate a secret to share with the creator
-	roomSecret := randString(32)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, roomSecret+","+roomString)
@@ -103,6 +102,8 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+		fmt.Println("11111")
+		return
 	}
 
 	queryString := "UPDATE questions SET votes = votes + 1 WHERE q_id = $1"
@@ -121,15 +122,99 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update them sockets
+	room := getRoom(req.RoomID)
 	for _, socket := range roomConnectionMap[req.RoomID] {
-		fmt.Println(socket)
 		// grab all the questions from the database for this room and send them back over the socket
+		err = socket.WriteJSON(room)
+		if err != nil {
+			failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+			return
+		}
 	}
+}
 
-	w.WriteHeader(http.StatusOK)
+func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+    req := struct {
+        QuestionText string
+        RoomCode string
+    }{"", ""}
+
+    // get question text and room from request
+    err := decoder.Decode(&req)
+
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
+    
+    // add new question to DB
+    queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
+    stmt, err := db.Prepare(queryString)
+
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
+
+    _, err = stmt.Exec(req.RoomCode, req.QuestionText)
+
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
+    fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
+    // get list of questions for current room
+        // list = geoff's thing (ws)
+
+    // broadcast updated question list to all clients in room
+    for _, ws := range roomConnectionMap[req.RoomCode] {
+        // send questions DB stuff for code
+        //ws.WriteJSON(list)
+        fmt.Println(ws)
+        fmt.Println("sent the questions to a guy\n");
+    }
 }
 
 func hideHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	req := struct {
+		RoomID     string
+		QuestionID string
+		Secret     string
+	}{"", "", ""}
+
+	err := decoder.Decode(&req)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+	}
+
+	queryString := "UPDATE questions SET hide = NOT hide" //toggle hidden status
+	stmt, err := db.Prepare(queryString)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stmt.Exec(req.QuestionID)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+		return
+	}
+
+	room := getRoom(req.RoomID)
+	for _, socket := range roomConnectionMap[req.RoomID] {
+		// grab all the questions from the database for this room and send them back over the socket
+		err = socket.WriteJSON(room)
+		if err != nil {
+			failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -147,6 +232,7 @@ func loadConfig() Configuration {
 	}
 	return configuration
 }
+
 
 func initDB() *sql.DB {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", configuration.DB.Host, configuration.DB.Port, configuration.DB.User, configuration.DB.Pass, configuration.DB.DbName)
@@ -179,6 +265,7 @@ func main() {
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/createRoom", createRoomHandler)
 	http.HandleFunc("/joinRoom", joinRoomHandler)
+	http.HandleFunc("/askQuestion", askQuestionHandler)
 	http.HandleFunc("/vote", voteHandler)
 	http.HandleFunc("/hide", hideHandler)
 	http.ListenAndServe(configuration.Port, nil)
