@@ -36,6 +36,22 @@ func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// generate the room string
 	roomString := randString(4)
 
+	// insert the new room
+	queryString := "INSERT INTO rooms(room_code, start_time) VALUES($1, now())"
+	stmt, err := db.Prepare(queryString)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stmt.Exec(roomString)
+
+	if err != nil {
+		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+		return
+	}
+
 	// generate a secret to share with the creator
 	roomSecret := randString(32)
 
