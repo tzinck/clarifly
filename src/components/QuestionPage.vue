@@ -1,46 +1,57 @@
 <template>
    <!-- Navigation -->
    <div class="body">
-      <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+      <!-- <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
         <div class="container">
-          <a class="navbar-brand">Room Code <br> {{this.$store.state.room}}</a>
+          <a class="navbar-brand">Room Code   :    {{this.$store.state.room}}</a>
           </div>
-      </nav>
+      </nav> -->
+      
+      <div class="col-lg-11 mx-auto boxy">
       
       <div class="questions">
-        <h1> Unanswered: </h1>
+        <h3> Unanswered: </h3>
+            <div class="upvote"> <a href=""> <img class="ruppee" src="./../assets/rup.png"> </a> <span class="count">{{count}} </span></div>
             <div class="row">
-              <div class="col-lg-12 mx-auto">
               <div class="question-box speech-bubble">
-                 <div class="upvote"> <a href=""> △ </a> <span class="count">{{count}} </span></div>
-                <p class="question">
+                <p class="question" v-bind:style="{ fontSize: getFontSize(10) + 'px' }">
                 {{msg}}
                 </p>
                 </div>
-              </div>
+            </div>
+            <div class="upvote"> <a href=""> <img class="ruppee" src="./../assets/rup.png"> </a> <span class="count">{{count}} </span></div>
+            <div class="row">
+              <div class="question-box speech-bubble">
+                <p class="question" v-bind:style="{ fontSize: getFontSize(6) + 'px' }">
+                {{msg}}
+                </p>
+                </div>
             </div>
       </div>
 
 
-    <div class="questions">
-            <h1> Answered: </h1>
-                <div class="row">
-                  <div class="col-lg-12 mx-auto">
-                  <div class="question-box answered speech-bubble">
-                    <div class="upvote">△ <span class="count">{{count}} </span></div>
-                    <p class="question">
-                    {{msg}}
-                    </p>
-                    </div>
-                  </div>
-                </div>
+    <div class="questions answer">
+      <h3> Answered: </h3>
+            <div class="upvote"><img class="ruppee" src="./../assets/rup.png"> <span class="count">{{count}} </span></div>
+      
+          <div class="row">
+            <div class="question-box answered speech-bubble" v-bind:style="{ borderWidth: getBorderWidth(1) + 'px' }">
+              <p class="question" v-bind:style="{ fontSize: getFontSize(1) + 'px' }">
+              {{msg}}
+              </p>
+              </div>
+              
+            </div>
+          </div>
      </div>
 
 <nav class="navbar navbar-expand-lg navbar-light fixed-bottom" id="mainNav">
         <div class="container container-ask">
-          <span class="ask-away" >ASK AWAY:</span>
-          <input class="input-box" v-model="message" placeholder="edit me">
-           <a v-on:click="sendQuestion" class="btn">Submit</a>
+          <img src="./../assets/fairy.gif">
+          <a class="navbar-brand">Room Code   <br>    {{this.$store.state.room}}</a>
+          <input label="njknjk" class="input-box" v-model="message" placeholder="Ask Away">
+           <a v-on:click="sendQuestion" class="btn">  Submit
+           </a>
           </div>
       </nav>
 
@@ -53,9 +64,9 @@ export default {
   name: 'QuestionPage',
   data () {
     return {
-      msg: "this is the message",
+      msg: "this is the message this is the message this is the message this is the message this is the message this is the message this is the message",
       count: '10',
-      message: 'send question'
+      message: ''
     };
   },
    mounted: function() {
@@ -75,9 +86,26 @@ export default {
       },
 
     methods: {
+
+      getFontSize(count)
+      {
+        var totalUpvotes = 20;
+        var minFont = 12;
+
+        return minFont + (count/totalUpvotes)*12;
+      },
+      
+      getBorderWidth(count)
+      {
+        var totalUpvotes = 20;
+        var minFont = 1;
+
+        return minFont + (count/totalUpvotes)*5;
+      },
+
       sendQuestion() {
         // emit message to start a new game
-        this.$http.post('http://889a3db6.ngrok.io/askQuestion', {QuestionText: this.message, RoomCode: this.$store.state.room}).then(response => {
+        this.$http.post('http://localhost:8081/askQuestion', {"QuestionText": this.message, "RoomCode": this.$store.state.room}).then(response => {
         }, response => {
           console.log(response);
         });
@@ -89,6 +117,14 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 
+.ruppee{
+  width:18px;
+}
+
+.boxy{
+  background-color:#fcfeff;
+}
+
 .container-ask{
   padding-top:20px;
   padding-bottom:10px;
@@ -99,9 +135,13 @@ export default {
   font-family: 'Cabin', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+.row{
+  margin-top:10px;
+}
+
 .btn{
   width:100px;
-  background-color:#1F6074;
+  background-color:#90D0E5;
 }
 
 .input-box{
@@ -110,14 +150,20 @@ export default {
 input{
   height:30px;
 }
+.answer{
+  padding-bottom:200px;
+}
 .answered{
   opacity:0.5;
 }
 .upvote{
-  margin-top:10px;
-  float: right; width: 20%;
+  margin-right:5%;
+  float: right;
   color:#F5D17B;
-  font-size:2rem;
+  font-size:1.2rem;
+  background-color:#90D0E5;
+  border:2px solid #90D0E5;
+  border-radius:5px;
 }
 
 .count{
@@ -125,6 +171,7 @@ input{
 }
 .question{
   padding-top: 15px;
+  
   font-family: 'Cabin', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: 500;
   font-size: 1.25rem;
@@ -132,19 +179,17 @@ input{
 
 .question-box{
   margin-left:5%;
-  width:90%;
+  width:95%;
   background-color:white;
-  border: 5px solid #F5D17B;
-  box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.3);  
+  box-shadow: 0px 1px 0px 0px rgba(0,0,0,0.2);
 }
 
 .speech-bubble {
 	position: relative;
 	background: white;
-	border-radius: 3em;
 }
 
-.speech-bubble:after {
+/* .speech-bubble:after {
 	content: '';
 	position: absolute;
 	left: 0;
@@ -157,17 +202,16 @@ input{
 	border-bottom: 0;
 	margin-top: -13px;
 	margin-left: -26px;
-}
+} */
 
 
 .questions{
-  padding-top: 100px;
+  padding-top: 20px;
 }
 #mainNav .navbar-brand {
   font-family: 'Cabin', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: 400;
-  font-size: 1.5rem;
-  
+  font-size:1rem;
 }
 #mainNav{
   background-color: #F5D17B;
@@ -180,12 +224,20 @@ input{
 
 
 .body{
-  background-color:#90D0E5;
+  background-color:white;
   height:100vh;
 }
 
 h1, h2 {
   font-weight: normal;
+}
+
+h3{
+  margin-top: 5px;
+  margin-bottom: 20px;
+  color: #A4Bf47;
+  text-align:left;
+  font-size:18px;
 }
 
 h4{
@@ -202,6 +254,10 @@ li {
 
 a{
   color: #F5D17B;
+}
+
+p{
+  margin-bottom: 5px;
 }
 
 a:hover {
