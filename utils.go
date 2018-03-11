@@ -73,7 +73,7 @@ func getRoom(code string) Room {
 	rows, err := stmt.Query(code)
 	failGracefully(err,"Could not query2\n")
 
-	queryString3 := "SELECT SUM(votes) FROM questions WHERE room_code = $1"
+	queryString3 := "SELECT COALESCE(SUM(votes), 0) FROM questions WHERE room_code = $1"
 	stmt, err = db.Prepare(queryString3)
 	failGracefully(err,"Could not prepare query3\n")
 	err = stmt.QueryRow(code).Scan(&room.VotesSum)
