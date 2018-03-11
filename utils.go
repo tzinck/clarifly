@@ -53,17 +53,17 @@ func randString(n int) string {
 }
 
 func getRoom(code string) Room {
-	queryString := "SELECT room_code, creator_id, start_time FROM rooms WHERE room_code = $1"
+	queryString := "SELECT room_code, start_time FROM rooms WHERE room_code = $1"
 	stmt, err := db.Prepare(queryString)
 
 	failGracefully(err,"Could not prepare query\n")
 
 	var room Room
-	err = stmt.QueryRow(code).Scan(&room.Code, &room.Creator, &room.Time)
+	err = stmt.QueryRow(code).Scan(&room.Code, &room.Time)
 
 	failGracefully(err,"Could not query\n")
 
-	queryString2 := "SELECT q_id, u_id, text, votes, reports, hide, ask_time FROM questions WHERE room_code = $1"
+	queryString2 := "SELECT q_id, text, votes, reports, hide, ask_time FROM questions WHERE room_code = $1"
 	stmt, err = db.Prepare(queryString2)
 	failGracefully(err,"Could not prepare query2\n")
 	rows, err := stmt.Query(code)
@@ -73,7 +73,7 @@ func getRoom(code string) Room {
 
 	for rows.Next() {
 		var q Question
-		rows.Scan(&q.QID, &q.UID, &q.Text, &q.Votes, &q.Reports, &q.Hidden, &q.Time)
+		rows.Scan(&q.QID, &q.Text, &q.Votes, &q.Reports, &q.Hidden, &q.Time)
 		room.Questions = append(room.Questions, q)
 	}
 
