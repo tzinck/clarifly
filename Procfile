@@ -1,1 +1,1 @@
-web: clarifly
+web: go run *.go
