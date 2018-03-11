@@ -102,7 +102,7 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		// send questions DB stuff for code
 		err := socket.WriteJSON(QuestionsList)
 		if err != nil {
-        	fmt.Println("Failed to send through websocket lol. Err: " + err.Error())
+			fmt.Println("Failed to send through websocket lol. Err: " + err.Error())
 			return
 		}
 		fmt.Println("Broadcasting questions for room " + string(p) + ".")
