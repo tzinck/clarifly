@@ -6,7 +6,11 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"regexp"
+	"bufio"
 )
+
+type Swears map[string]int
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const (
@@ -78,6 +82,30 @@ func getRoom(code string) Room {
 	}
 
 	return room
+}
+
+func loadProfanity(path string) (Swears){
+	s := make(Swears)
+	file, err := os.Open(path)
+	failOnError(err, "could not load naughty words")
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		s[scanner.Text()] = 1
+	}
+	return s
+}
+
+func profane (input string) (bool) {
+	for word := range swears {
+		pattern := "(?i)" + word
+		match, err := regexp.MatchString(pattern, input)
+		failOnError(err, "could not check naughty words")
+		if match{
+			return true
+		}
+	}
+	return false
 }
 
 func checkHeroku() bool {
