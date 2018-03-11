@@ -1,6 +1,5 @@
 package main
 
-import "database/sql"
 
 type QuestionMessage struct {
 	Question string
