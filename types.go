@@ -30,5 +30,6 @@ type Question struct {
 type Room struct {
 	Code      string
 	Time      string
+	VotesSum  int
 	Questions []Question
 }
