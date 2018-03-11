@@ -6,7 +6,11 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"regexp"
+	"bufio"
 )
+
+type Swears map[string]int
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const (
@@ -23,13 +27,13 @@ func failWithStatusCode(err error, msg string, w http.ResponseWriter, statusCode
 
 func failGracefully(err error, msg string) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		fmt.Printf("%s: %s\n", msg, err)
 	}
 }
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		fmt.Printf("%s: %s\n", msg, err)
 		panic(err)
 	}
 }
@@ -50,6 +54,58 @@ func randString(n int) string {
 	}
 
 	return string(b)
+}
+
+func getRoom(code string) Room {
+	queryString := "SELECT room_code, start_time FROM rooms WHERE room_code = $1"
+	stmt, err := db.Prepare(queryString)
+
+	failGracefully(err,"Could not prepare query\n")
+
+	var room Room
+	err = stmt.QueryRow(code).Scan(&room.Code, &room.Time)
+
+	failGracefully(err,"Could not query\n")
+
+	queryString2 := "SELECT q_id, text, votes, reports, hide, ask_time FROM questions WHERE room_code = $1"
+	stmt, err = db.Prepare(queryString2)
+	failGracefully(err,"Could not prepare query2\n")
+	rows, err := stmt.Query(code)
+	failGracefully(err,"Could not query2\n")
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var q Question
+		rows.Scan(&q.QID, &q.Text, &q.Votes, &q.Reports, &q.Hidden, &q.Time)
+		room.Questions = append(room.Questions, q)
+	}
+
+	return room
+}
+
+func loadProfanity(path string) (Swears){
+	s := make(Swears)
+	file, err := os.Open(path)
+	failOnError(err, "could not load naughty words")
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		s[scanner.Text()] = 1
+	}
+	return s
+}
+
+func profane (input string) (bool) {
+	for word := range swears {
+		pattern := "(?i)" + word
+		match, err := regexp.MatchString(pattern, input)
+		failOnError(err, "could not check naughty words")
+		if match{
+			return true
+		}
+	}
+	return false
 }
 
 func checkHeroku() bool {
