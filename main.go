@@ -128,32 +128,46 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("asdkjsflkjsdlkfsd hahahahahaha\n");
+	decoder := json.NewDecoder(r.Body)
+    req := struct {
+        QuestionText string
+        RoomCode string
+    }{"", ""}
 
-	// get question submitted by client from request
-	message := "hi this is question pls answer"
+    // get question text and room from request
+    err := decoder.Decode(&req)
 
-	// get room code from request
-	room_code := "boob";
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
+    
+    // add new question to DB
+    queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
+    stmt, err := db.Prepare(queryString)
 
-	// add new question to DB
-	queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
-	stmt, err := db.Prepare(queryString)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
-		return
-	}
+    _, err = stmt.Exec(req.RoomCode, req.QuestionText)
 
-	_, err = stmt.Exec(room_code, message)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
+    fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
+    // get list of questions for current room
+        // list = geoff's thing (ws)
 
-
-	// broadcast new message to all websockets for this room
-	for _, ws := range roomConnectionMap[room_code] {
-		// send questions DB stuff for code
-		fmt.Println(ws);
-		fmt.Println("hi hahahahahaha\n");
-	}
+    // broadcast updated question list to all clients in room
+    for _, ws := range roomConnectionMap[req.RoomCode] {
+        // send questions DB stuff for code
+        //ws.WriteJSON(list)
+        fmt.Println(ws)
+        fmt.Println("sent the questions to a guy\n");
+    }
 }
 
 func hideHandler(w http.ResponseWriter, r *http.Request) {
