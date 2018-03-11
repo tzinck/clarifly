@@ -175,15 +175,9 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add new question to DB
-	queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
-	stmt, err := db.Prepare(queryString)
-
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
-		return
-	}
-
-	_, err = stmt.Exec(req.RoomCode, req.QuestionText)
+	queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0) RETURNING q_id"
+	var QID int
+	err = db.QueryRow(queryString, req.RoomCode, req.QuestionText).Scan(&QID)
 
 	if err != nil {
 		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
@@ -191,18 +185,37 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
 
-	// get list of questions for current room
-	QuestionsList := getRoom(req.RoomCode)
-	// broadcast updated question list to all clients in room
+	// // get list of questions for current room
+	// QuestionsList := getRoom(req.RoomCode)
+	// // broadcast updated question list to all clients in room
+	// for _, socket := range roomConnectionMap[req.RoomCode] {
+	// 	// send questions DB stuff for code
+	// 	err := socket.WriteJSON(QuestionsList)
+	// 	if err != nil {
+	// 		failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// 	fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+	// }
+
+	// create and return Question struct of new question
+	question := Question{}
+	question.QID = QID
+	question.Text = req.QuestionText
+	question.Votes = 0
+	question.Hidden = false
+
+	// broadcast new question to all clients in room
 	for _, socket := range roomConnectionMap[req.RoomCode] {
 		// send questions DB stuff for code
-		err := socket.WriteJSON(QuestionsList)
+		err := socket.WriteJSON(question)
 		if err != nil {
 			failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+		fmt.Println("Broadcasting new question for room " + req.RoomCode + ".")
 	}
+
 }
 
 func hideHandler(w http.ResponseWriter, r *http.Request) {
