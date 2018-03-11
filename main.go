@@ -18,6 +18,7 @@ var (
 	isHeroku      = checkHeroku()
 	configuration = loadConfig()
 	db            = initDB()
+	swears        = loadProfanity("en")
 )
 
 var roomConnectionMap = make(map[string][]*websocket.Conn)
@@ -57,38 +58,67 @@ func createRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("Creating room with code " + roomString + ".")
+
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, roomSecret+","+roomString)
 }
 
 func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// upgrade to a websocket
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
-		return
-	}
+    conn, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
 
-	// message := struct {
-	// 	RoomString string
-	// }{""}
-	// frontend handshake to get user and hook them into the userMap for sockets
-	messageType, p, err := conn.ReadMessage()
-	if err != nil {
-		failWithStatusCode(err, "Failed to handshake", w, http.StatusInternalServerError)
-		return
-	}
+    messageType, p, err := conn.ReadMessage()
+    if err != nil {
+        failWithStatusCode(err, "Failed to handshake", w, http.StatusInternalServerError)
+        return
+    }
 
-	fmt.Println("room code received: " + string(p))
-	fmt.Println(messageType)
-	roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
+    // Check DB if room exists
+    var code string
+    err = db.QueryRow("SELECT room_code FROM rooms WHERE room_code = $1", string(p)).Scan(&code)
+    if err == sql.ErrNoRows || err != nil {
+    	// Room does not exist
+    	returnmsg := []byte("Room " + string(p) + " does not exist.")
+	    err = conn.WriteMessage(messageType, returnmsg)
+
+	    if err != nil {
+	        fmt.Println("error message broke bad lol")
+	        return
+	    }
+
+	    fmt.Println("Room " + string(p) + " does not exist.")
+        return
+    }
+
+    fmt.Println("room code received: " + string(p) + ", " + string(messageType))
+
+    // Add this new socket to the room-sockets map
+    roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
+
+    // get list of questions for current room
+    QuestionsList := getRoom(string(p))
+    // broadcast updated question list to all clients in room
+    for _, socket := range roomConnectionMap[string(p)] {
+        // send questions DB stuff for code
+        err := socket.WriteJSON(QuestionsList)
+        if err != nil {
+        	fmt.Println("Failed to send through websocket lol.")
+	        return
+	    }
+	    fmt.Println("Broadcasting questions for room " + string(p) + ".")
+    }
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
 	// unmarhall the question id
 	decoder := json.NewDecoder(r.Body)
 	req := struct {
-		RoomID     string
+		RoomCode     string
 		QuestionID string
 	}{"", ""}
 
@@ -96,7 +126,6 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
-		fmt.Println("11111")
 		return
 	}
 
@@ -115,50 +144,77 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// update them sockets
-	room := getRoom(req.RoomID)
-	for _, socket := range roomConnectionMap[req.RoomID] {
-		// grab all the questions from the database for this room and send them back over the socket
-		err = socket.WriteJSON(room)
-		if err != nil {
-			failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
-			return
-		}
-	}
+	// get list of questions for current room
+    QuestionsList := getRoom(req.RoomCode)
+    // broadcast updated question list to all clients in room
+    for _, socket := range roomConnectionMap[req.RoomCode] {
+        // send questions DB stuff for code
+        err := socket.WriteJSON(QuestionsList)
+        if err != nil {
+	        failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
+	        return
+	    }
+	    fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+    }
 }
 
 func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("asdkjsflkjsdlkfsd hahahahahaha\n")
 
-	// get question submitted by client from request
-	message := "hi this is question pls answer"
+	decoder := json.NewDecoder(r.Body)
+    req := struct {
+        QuestionText string
+        RoomCode string
+    }{"", ""}
 
-	// get room code from request
-	room_code := "boob"
+    // get question text and room from request
+    err := decoder.Decode(&req)
 
-	// add new question to DB
-	queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
-	stmt, err := db.Prepare(queryString)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
 
-	if err != nil {
-		failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
-		return
-	}
+    if profane(req.QuestionText) {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        fmt.Println("bad word detected: " + req.QuestionText)
+        return
+    }
+    
+    // add new question to DB
+    queryString := "INSERT INTO questions(room_code, text, votes) VALUES($1, $2, 0)"
+    stmt, err := db.Prepare(queryString)
 
-	_, err = stmt.Exec(room_code, message)
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
 
-	// broadcast new message to all websockets for this room
-	for _, ws := range roomConnectionMap[room_code] {
-		// send questions DB stuff for code
-		fmt.Println(ws)
-		fmt.Println("hi hahahahahaha\n")
-	}
+    _, err = stmt.Exec(req.RoomCode, req.QuestionText)
+
+    if err != nil {
+        failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
+        return
+    }
+    fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
+   
+    // get list of questions for current room
+    QuestionsList := getRoom(req.RoomCode)
+    // broadcast updated question list to all clients in room
+    for _, socket := range roomConnectionMap[req.RoomCode] {
+        // send questions DB stuff for code
+        err := socket.WriteJSON(QuestionsList)
+        if err != nil {
+	        failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
+	        return
+	    }
+	    fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+    }
 }
 
 func hideHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	req := struct {
-		RoomID     string
+		RoomCode     string
 		QuestionID string
 		Secret     string
 	}{"", "", ""}
@@ -184,15 +240,18 @@ func hideHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room := getRoom(req.RoomID)
-	for _, socket := range roomConnectionMap[req.RoomID] {
-		// grab all the questions from the database for this room and send them back over the socket
-		err = socket.WriteJSON(room)
-		if err != nil {
-			failWithStatusCode(err, http.StatusText(http.StatusInternalServerError), w, http.StatusInternalServerError)
-			return
-		}
-	}
+	// get list of questions for current room
+    QuestionsList := getRoom(req.RoomCode)
+    // broadcast updated question list to all clients in room
+    for _, socket := range roomConnectionMap[req.RoomCode] {
+        // send questions DB stuff for code
+        err := socket.WriteJSON(QuestionsList)
+        if err != nil {
+	        failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
+	        return
+	    }
+	    fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+    }
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -212,35 +271,6 @@ func loadConfig() Configuration {
 	return configuration
 }
 
-func getQuestions(room_code string) {
-	queryString := fmt.Sprintf("SELECT text, votes FROM questions WHERE room_code = %s", room_code)
-	rows, err := db.Query(queryString)
-
-	// CHECK ERR HERE
-	if err != nil {
-		return
-	}
-
-	for rows.Next() {
-
-	}
-
-	/*
-			rows, err := db.Query("SELECT * FROM userinfo")
-		        checkErr(err)
-
-		        for rows.Next() {
-		            var uid int
-		            var username string
-		            var department string
-		            var created time.Time
-		            err = rows.Scan(&uid, &username, &department, &created)
-		            checkErr(err)
-		            fmt.Println("uid | username | department | created ")
-		            fmt.Printf("%3v | %8v | %6v | %6v\n", uid, username, department, created)
-		        }
-	*/
-}
 
 func initDB() *sql.DB {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", configuration.DB.Host, configuration.DB.Port, configuration.DB.User, configuration.DB.Pass, configuration.DB.DbName)

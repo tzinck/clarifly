@@ -22,7 +22,6 @@ type DbCreds struct {
 
 type Question struct {
 	QID         int
-	UID         int
 	Text        string
 	Votes       int
 	Reports     int
@@ -32,7 +31,6 @@ type Question struct {
 
 type Room struct {
 	Code        string
-	Creator     int
 	Time        string
 	Questions []Question
 }
