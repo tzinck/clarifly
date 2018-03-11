@@ -25,6 +25,9 @@ var roomConnectionMap = make(map[string][]*websocket.Conn)
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,18 +70,19 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := struct {
-		RoomString string
-	}{""}
+	// message := struct {
+	// 	RoomString string
+	// }{""}
 	// frontend handshake to get user and hook them into the userMap for sockets
-	err = conn.ReadJSON(&message)
+	messageType, p, err := conn.ReadMessage()
 	if err != nil {
 		failWithStatusCode(err, "Failed to handshake", w, http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("web socket worked")
-	roomConnectionMap[message.RoomString] = append(roomConnectionMap[message.RoomString], conn)
+	fmt.Println("room code received: " + string(p))
+	fmt.Println(messageType)
+	roomConnectionMap[string(p)] = append(roomConnectionMap[string(p)], conn)
 }
 
 func voteHandler(w http.ResponseWriter, r *http.Request) {
