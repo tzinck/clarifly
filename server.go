@@ -139,17 +139,26 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get list of questions for current room
-	QuestionsList := getRoom(req.RoomCode)
-	// broadcast updated question list to all clients in room
+	var QuestionText string
+	var QuestionVotes int
+	db.QueryRow("SELECT text, votes FROM questions WHERE q_id = $1", req.QuestionID).Scan(&QuestionText, &QuestionVotes)
+
+	// create and return Question struct of new question
+	question := Question{}
+	question.QID = req.QuestionID
+	question.Text = QuestionText
+	question.Votes = QuestionVotes
+	question.Hidden = false
+
+	// broadcast new question to all clients in room
 	for _, socket := range roomConnectionMap[req.RoomCode] {
 		// send questions DB stuff for code
-		err := socket.WriteJSON(QuestionsList)
+		err := socket.WriteJSON(question)
 		if err != nil {
 			failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+		fmt.Println("Broadcasting new question for room " + req.RoomCode + ".")
 	}
 }
 
@@ -184,19 +193,6 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("code: %s, text: %s\n", req.RoomCode, req.QuestionText)
-
-	// // get list of questions for current room
-	// QuestionsList := getRoom(req.RoomCode)
-	// // broadcast updated question list to all clients in room
-	// for _, socket := range roomConnectionMap[req.RoomCode] {
-	// 	// send questions DB stuff for code
-	// 	err := socket.WriteJSON(QuestionsList)
-	// 	if err != nil {
-	// 		failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// 	fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
-	// }
 
 	// create and return Question struct of new question
 	question := Question{}
@@ -247,20 +243,27 @@ func hideHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get list of questions for current room
-	QuestionsList := getRoom(req.RoomCode)
-	// broadcast updated question list to all clients in room
+	var QuestionText string
+	var QuestionVotes int
+	db.QueryRow("SELECT text, votes FROM questions WHERE q_id = $1", req.QuestionID).Scan(&QuestionText, &QuestionVotes)
+
+	// create and return Question struct of new question
+	question := Question{}
+	question.QID = req.QuestionID
+	question.Text = QuestionText
+	question.Votes = QuestionVotes
+	question.Hidden = true
+
+	// broadcast new question to all clients in room
 	for _, socket := range roomConnectionMap[req.RoomCode] {
 		// send questions DB stuff for code
-		err := socket.WriteJSON(QuestionsList)
+		err := socket.WriteJSON(question)
 		if err != nil {
 			failWithStatusCode(err, "Failed to send through websocket.", w, http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("Broadcasting questions for room " + req.RoomCode + ".")
+		fmt.Println("Broadcasting new question for room " + req.RoomCode + ".")
 	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func loadConfig() Configuration {
