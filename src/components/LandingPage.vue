@@ -78,8 +78,6 @@ export default {
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        var host = location.origin.replace(/^http/, 'ws');
-        console.log(host);
         this.$http.post('/createRoom', {}).then(response => {
 
           // get body data
@@ -116,7 +114,7 @@ export default {
         self.$store.commit('set_ws', '');
 
         // Open websocket
-        this.ws = new WebSocket("ws://9081f8c8.ngrok.io/joinRoom");
+        this.ws = new WebSocket("/joinRoom");
 
         // On message: if room doesn't exist, close socket. 
         this.ws.onmessage = function(e) {
