@@ -124,7 +124,7 @@ export default {
       sendQuestion() {
         // emit message to start a new game
 
-        this.$http.post('http://localhost:8080/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room.Code}).then(response => {
+        this.$http.post('/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room.Code}).then(response => {
 
 
         }, response => {
@@ -134,7 +134,7 @@ export default {
 
       upvote(id) {
           // emit message to start a new game
-          this.$http.post('http://localhost:8080/vote', {"QuestionID": parseInt(id), "RoomCode": this.$store.state.room.Code}).then(response => {
+          this.$http.post('/vote', {"QuestionID": parseInt(id), "RoomCode": this.$store.state.room.Code}).then(response => {
           }, response => {
             console.log(response);
           });

@@ -79,7 +79,7 @@ export default {
           console.log("mememe");
         // GET /someUrl
 
-        this.$http.post('http://localhost:8080/createRoom', {}).then(response => {
+        this.$http.post('/createRoom', {}).then(response => {
 
 
           // get body data
@@ -119,8 +119,9 @@ export default {
         self.$store.commit('set_ws', '');
 
         // Open websocket
-
-        this.ws = new WebSocket("ws://localhost:8080/joinRoom");
+        var host = location.origin.replace(/^http/, 'ws');
+        host = host + "/joinRoom";
+        this.ws = new WebSocket(host);
 
 
         // On message: if room doesn't exist, close socket. 
