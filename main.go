@@ -18,6 +18,7 @@ var (
 	isHeroku      = checkHeroku()
 	configuration = loadConfig()
 	db            = initDB()
+	swears        = loadProfanity("en")
 )
 
 var roomConnectionMap = make(map[string][]*websocket.Conn)
@@ -169,6 +170,12 @@ func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        return
+    }
+
+    if profane(req.QuestionText) {
+        failWithStatusCode(err, http.StatusText(http.StatusBadRequest), w, http.StatusBadRequest)
+        fmt.Println("bad word detected: " + req.QuestionText)
         return
     }
     
