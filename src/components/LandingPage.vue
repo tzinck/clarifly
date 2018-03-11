@@ -78,7 +78,7 @@ export default {
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        this.$http.post('http://9081f8c8.ngrok.io/createRoom', {}).then(response => {
+        this.$http.post('http://localhost:8080/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
@@ -114,7 +114,7 @@ export default {
         self.$store.commit('set_ws', '');
 
         // Open websocket
-        this.ws = new WebSocket("ws://9081f8c8.ngrok.io/joinRoom");
+        this.ws = new WebSocket("ws://localhost:8080/joinRoom");
 
         // On message: if room doesn't exist, close socket. 
         this.ws.onmessage = function(e) {
@@ -124,7 +124,15 @@ export default {
           }else{
             // Room exists, route to QuestionPage
             self.$store.commit('set_connected',true);
-            self.$store.commit('set_room', JSON.parse(e.data));
+
+            var obj = JSON.parse(e.data);
+            if(obj.Questions.length == 1)
+            {
+              self.$store.commit('set_question', obj.Questions[0]);
+            }
+            else{
+              self.$store.commit('set_room', obj);
+            }
             self.$store.commit('set_ws', self.ws);
             self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
           }
@@ -153,8 +161,9 @@ input{
   width:203px;
 }
 
-body{
-  background-color:#90D0E5;
+#page-top{
+  
+  background-color: #F5D17B;
 }
 
 #about{

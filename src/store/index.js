@@ -17,6 +17,10 @@ export default new Vuex.Store({
             state.room = room;
         },
 
+        set_question(state, question){
+            state.room.Questions.append(question);
+        },
+
         set_secret(state, secret){
             state.secret = secret;
         },
