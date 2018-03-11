@@ -80,7 +80,7 @@ export default {
         // GET /someUrl
         var host = location.origin.replace(/^http/, 'ws');
         console.log(host);
-        this.$http.post(host+'/createRoom', {}).then(response => {
+        this.$http.post('/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
