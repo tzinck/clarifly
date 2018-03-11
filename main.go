@@ -154,6 +154,7 @@ func voteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func askQuestionHandler(w http.ResponseWriter, r *http.Request) {
+
 	decoder := json.NewDecoder(r.Body)
 	req := struct {
 		QuestionText string

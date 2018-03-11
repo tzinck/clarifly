@@ -24,18 +24,31 @@
     </header>
 
     <!-- About Section -->
+           
     <section id="about" class="content-section text-center">
-      <div class="container">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+        <img class="tree" src="./../assets/Treegreen.png">
+      <div class="container about">
         <div class="row">
           <div class="col-lg-8 mx-auto">
-            <h2>About Grayscale</h2>
-            <p>Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on
-              <a href="http://startbootstrap.com/template-overviews/grayscale/">the preview page</a>. The theme is open source, and you can use it for any purpose, personal or commercial.</p>
-            <p>This theme features stock photos by
-              <a href="http://gratisography.com/">Gratisography</a>
-              along with a custom Google Maps skin courtesy of
-              <a href="http://snazzymaps.com/">Snazzy Maps</a>.</p>
-            <p>Grayscale includes full HTML, CSS, and custom JavaScript files along with SASS and LESS files for easy customization!</p>
+            <h2>About Clarifly</h2>
+            <p>Clarifly is a service that helps students ask questions in class without disturbing the lecture or feeling embarrassed.</p>
+            <p>Teachers can create a room that students can submit questions to during class. The teachers can then answer the questions in class, or can view the questions after class and send an email to their class.</p>
+            <p>Students can upvote eachother's questions to show that they also require clarification! </p>
           </div>
         </div>
       </div>
@@ -60,15 +73,19 @@ export default {
   //   ...mapState(['connected'])
   // },
   methods: {
+
+    
       createRoom() {
           console.log("mememe");
         // GET /someUrl
-        this.$http.post('http://889a3db6.ngrok.io/createRoom', {}).then(response => {
+        this.$http.post('http://9081f8c8.ngrok.io/createRoom', {}).then(response => {
 
           // get body data
           this.someData = response.body;
-          this.set_room(this.someData[1]);
-          this.$router.push({ name: 'Join', params: { room: this.someData[1] } });
+          this.$store.commit('set_secret',this.someData[0]);
+          this.$store.commit('set_room',this.someData[1]);
+          
+          this.$router.push({ name: 'Join', params: { room: this.$store.state.room } });
 
         }, response => {
           console.log(response);
@@ -81,16 +98,44 @@ export default {
         // GET /someUrl
         //this.$http.post('http://889a3db6.ngrok.io/joinRoom', {room_id: this.room}).then(response => {
           var self = this;
-        this.ws = new WebSocket("ws://889a3db6.ngrok.io/joinRoom")
-        this.ws.onopen = function() {
-          self.$store.commit('set_connected',true);
-          self.$store.commit('set_room', self.room)
-          self.$store.commit('set_ws', self.ws)
-          self.$store.state.ws.send(self.room);
-          self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
-        }
-        
+          console.log(this.$store.state.ws.readyState);
 
+        // Check to see if the ws already exists and that it's not closed
+        if (this.$store.state.ws && this.$store.state.ws.readyState == '1') {
+          // Exists, route to it
+          console.log("here");
+          self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
+        }else{
+        // Doesn't exist, try to make a new one
+
+        // Reset vars
+        self.$store.commit('set_connected',false);
+        self.$store.commit('set_room', '');
+        self.$store.commit('set_ws', '');
+
+        // Open websocket
+        this.ws = new WebSocket("ws://9081f8c8.ngrok.io/joinRoom");
+
+        // On message: if room doesn't exist, close socket. 
+        this.ws.onmessage = function(e) {
+
+          if(String(e.data.trim()) === ("Room " + self.room + " does not exist.")){
+            self.ws.close();
+          }else{
+            // Room exists, route to QuestionPage
+            self.$store.commit('set_connected',true);
+            self.$store.commit('set_room', JSON.parse(e.data));
+            self.$store.commit('set_ws', self.ws);
+            self.$router.push({ name: 'Join', params: { room: self.$store.state.room } });
+          }
+        };
+          // On open: send our room code
+          this.ws.onopen = function() {
+            self.ws.send(self.room);
+          };
+        }
+
+        
           // get body data
           // this.someData = response.body;
           // this.set_room(this.room);
@@ -104,8 +149,27 @@ export default {
   font-weight:500;
 }
 
+input{
+  width:203px;
+}
+
 body{
   background-color:#90D0E5;
+}
+
+#about{
+  color:white;
+  font-weight:500;
+  font-family: 'Cabin', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+}
+
+.about{
+  margin-top:20px;
+}
+
+.tree{
+  width:50px;
 }
 </style>
 

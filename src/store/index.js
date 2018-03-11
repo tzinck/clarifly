@@ -9,11 +9,16 @@ export default new Vuex.Store({
         connected: false,
         upvotes: '',
         room: '',
+        secret: '',
     },
  
     mutations: {
         set_room(state, room){
             state.room = room;
+        },
+
+        set_secret(state, secret){
+            state.secret = secret;
         },
 
         set_ws(state, ws){
