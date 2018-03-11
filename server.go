@@ -102,7 +102,7 @@ func joinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		// send questions DB stuff for code
 		err := socket.WriteJSON(QuestionsList)
 		if err != nil {
-        	fmt.Println("Failed to send through websocket lol. Err: " + err.Error())
+			fmt.Println("Failed to send through websocket lol. Err: " + err.Error())
 			return
 		}
 		fmt.Println("Broadcasting questions for room " + string(p) + ".")
@@ -295,7 +295,14 @@ func initDB() *sql.DB {
 }
 
 func main() {
-	fmt.Printf("Listening on port: %s\n", configuration.Port)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	} else {
+		port = ":" + port
+	}
+
+	fmt.Printf("Listening on port: %s\n", port)
 
 	fs := http.FileServer(http.Dir("dist"))
 	http.Handle("/", fs)
@@ -304,5 +311,5 @@ func main() {
 	http.HandleFunc("/askQuestion", askQuestionHandler)
 	http.HandleFunc("/vote", voteHandler)
 	http.HandleFunc("/hide", hideHandler)
-	http.ListenAndServe(configuration.Port, nil)
+	http.ListenAndServe(port, nil)
 }

@@ -1,15 +1,13 @@
 package main
 
-
 type QuestionMessage struct {
 	Question string
-    Votes int
-    Q_ID int
+	Votes    int
+	Q_ID     int
 }
 
 type Configuration struct {
-	DB   DbCreds
-	Port string
+	DB DbCreds
 }
 
 type DbCreds struct {
@@ -21,17 +19,17 @@ type DbCreds struct {
 }
 
 type Question struct {
-	QID         int
-	Text        string
-	Votes       int
-	Reports     int
-	Hidden      bool
-	Time        string
+	QID     int
+	Text    string
+	Votes   int
+	Reports int
+	Hidden  bool
+	Time    string
 }
 
 type Room struct {
-	Code        string
-	Time        string
-    VotesSum    int
+	Code      string
+	Time      string
+	VotesSum  int
 	Questions []Question
 }
