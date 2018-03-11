@@ -105,7 +105,9 @@ export default {
 
       sendQuestion() {
         // emit message to start a new game
-        this.$http.post('http://localhost:8081/askQuestion', {"QuestionText": this.message, "RoomCode": this.$store.state.room}).then(response => {
+
+        this.$http.post('http://9081f8c8.ngrok.io/askQuestion', {'QuestionText': this.message, 'RoomCode': this.$store.state.room}).then(response => {
+
         }, response => {
           console.log(response);
         });
