@@ -52,6 +52,34 @@ func randString(n int) string {
 	return string(b)
 }
 
+func getRoom(code string) Room {
+	queryString := "SELECT room_code, creator_id, start_time FROM rooms WHERE room_code = $1"
+	stmt, err := db.Prepare(queryString)
+
+	failGracefully(err,"Could not prepare query\n")
+
+	var room Room
+	err = stmt.QueryRow(code).Scan(&room.Code, &room.Creator, &room.Time)
+
+	failGracefully(err,"Could not query\n")
+
+	queryString2 := "SELECT q_id, u_id, text, votes, reports, hide, ask_time FROM questions WHERE room_code = $1"
+	stmt, err = db.Prepare(queryString2)
+	failGracefully(err,"Could not prepare query2\n")
+	rows, err := stmt.Query(code)
+	failGracefully(err,"Could not query2\n")
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var q Question
+		rows.Scan(&q.QID, &q.UID, &q.Text, &q.Votes, &q.Reports, &q.Hidden, &q.Time)
+		room.Questions = append(room.Questions, q)
+	}
+
+	return room
+}
+
 func checkHeroku() bool {
 	if os.Getenv("IS_HEROKU") != "" {
 		fmt.Printf("this is running on heroku")

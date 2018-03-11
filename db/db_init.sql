@@ -20,6 +20,7 @@ GRANT ALL PRIVILEGES ON DATABASE clarifly TO navi;
 CREATE TABLE IF NOT EXISTS rooms (
   room_code   VARCHAR(4) PRIMARY KEY,
   creator_id  INT,
+  secret      VARCHAR(32),
   start_time  TIMESTAMP,
   end_time    TIMESTAMP
 );
@@ -39,5 +40,6 @@ CREATE TABLE IF NOT EXISTS questions (
   text        VARCHAR(140),
   votes       INT,
   reports     INT,
+  hide        BOOLEAN,
   ask_time    TIMESTAMP
 );

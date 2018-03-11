@@ -1,5 +1,6 @@
 package main
 
+
 type QuestionMessage struct {
 	Question string
 }
@@ -15,4 +16,21 @@ type DbCreds struct {
 	User   string
 	Pass   string
 	DbName string
+}
+
+type Question struct {
+	QID         int
+	UID         int
+	Text        string
+	Votes       int
+	Reports     int
+	Hidden      bool
+	Time        string
+}
+
+type Room struct {
+	Code        string
+	Creator     int
+	Time        string
+	Questions []Question
 }
