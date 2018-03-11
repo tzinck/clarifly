@@ -3,7 +3,7 @@
    <div class="body">
       <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
         <div class="container">
-          <a class="navbar-brand">Room Code <br> {{room}}</a>
+          <a class="navbar-brand">Room Code <br> {{this.$store.state.room}}</a>
           </div>
       </nav>
       
@@ -40,7 +40,7 @@
         <div class="container container-ask">
           <span class="ask-away" >ASK AWAY:</span>
           <input class="input-box" v-model="message" placeholder="edit me">
-           <a href="" class="btn">Submit</a>
+           <a v-on:click="sendQuestion" class="btn">Submit</a>
           </div>
       </nav>
 
@@ -48,23 +48,39 @@
 </template>
 
 <script>
+import {mapState, mapMutations} from 'vuex';
 export default {
   name: 'QuestionPage',
   data () {
     return {
-      room: 'MEME',
       msg: "this is the message",
       count: '10',
       message: 'send question'
     };
   },
+   mounted: function() {
+        console.log('joined');
+        console.log(this.$store.state.connected);
+        if(!this.$store.state.connected)
+        {
+        this.$router.push({ name: 'LandingPage' });
+        }
+
+
+        var self = this;
+        this.$store.state.ws.addEventListener('message', function(e) {
+            console.log(e);
+            //var msg = JSON.parse(e.data);
+        });
+      },
+
     methods: {
       sendQuestion() {
         // emit message to start a new game
-        const params = {
-          room: this.room,
-        };
-        //this.$socket.emit('regenerate', params);
+        this.$http.post('http://889a3db6.ngrok.io/askQuestion', {QuestionText: this.message, RoomCode: this.$store.state.room}).then(response => {
+        }, response => {
+          console.log(response);
+        });
       }
     }
 }

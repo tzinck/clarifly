@@ -5,9 +5,15 @@
 </template>
 
 <script>
+import {mapState, mapMutations} from 'vuex';
 export default {
-  name: 'App'
+  name: 'App',
+  computed: {
+    connected() {return this.$store.state.connected}
+  }
+
 }
+  
 </script>
 
 <style>
